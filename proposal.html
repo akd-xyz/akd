@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>A Question For You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Marcellus&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wine-deep:   #2a0e18;
+    --wine-mid:    #3f1626;
+    --blush:       #f6c9d4;
+    --gold:        #c9a24b;
+    --gold-soft:   #e6cf9a;
+    --cream:       #fbf0e8;
+    --ink:         rgba(251,240,232,0.75);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    height:100%;
+    background:
+      radial-gradient(120% 90% at 50% -10%, #4a1a30 0%, transparent 55%),
+      radial-gradient(100% 80% at 90% 110%, #401828 0%, transparent 50%),
+      linear-gradient(160deg, var(--wine-deep) 0%, #1c0a12 100%);
+    overflow:hidden;
+    font-family:'Jost', sans-serif;
+    color:var(--cream);
+  }
+
+  /* ---------- ambient petals / particles ---------- */
+  #petal-field{
+    position:fixed; inset:0; pointer-events:none; z-index:1;
+  }
+  .petal{
+    position:absolute; top:-5%;
+    opacity:0.55;
+    animation-name: drift;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
+  }
+  .petal svg{ display:block; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
+  @keyframes drift{
+    0%   { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    100% { transform: translateY(110vh) translateX(var(--drift-x, 40px)) rotate(360deg); }
+  }
+
+  /* ---------- stage management ---------- */
+  .stage{
+    position:relative; z-index:2;
+    height:100dvh; width:100%;
+    display:flex; align-items:center; justify-content:center;
+    padding: 6vh 6vw;
+  }
+  #thankyou-stage{ display:none; }
+  .fade-out{ animation: fadeOut .6s ease forwards; }
+  .fade-in{ animation: fadeIn .9s ease forwards; }
+  @keyframes fadeOut{ to{ opacity:0; transform:scale(.97); } }
+  @keyframes fadeIn{ from{ opacity:0; transform:scale(.98);} to{opacity:1; transform:scale(1);} }
+
+  /* ---------- proposal card ---------- */
+  .card{
+    position:relative;
+    width:min(560px, 92vw);
+    text-align:center;
+    padding: 8vh 3rem 6vh;
+  }
+  .eyebrow{
+    font-family:'Jost',sans-serif;
+    letter-spacing: 0.42em;
+    text-transform:uppercase;
+    font-size:0.68rem;
+    color: var(--gold-soft);
+    opacity:0.85;
+    margin-bottom: 1.6rem;
+  }
+  .eyebrow::before, .eyebrow::after{
+    content:"";
+    display:inline-block;
+    width:22px; height:1px;
+    background: var(--gold-soft);
+    vertical-align:middle;
+    margin: 0 10px 3px;
+    opacity:0.7;
+  }
+  h1.question{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size: clamp(2.3rem, 6.5vw, 3.6rem);
+    line-height:1.15;
+    color: var(--cream);
+    margin-bottom: 0.6rem;
+    text-shadow: 0 2px 30px rgba(230,180,150,0.15);
+  }
+  h1.question .accent{
+    color: var(--blush);
+    font-family:'Marcellus', serif;
+    font-style:normal;
+  }
+  .sub{
+    font-size:0.92rem;
+    color: var(--ink);
+    font-weight:300;
+    letter-spacing:0.02em;
+    margin-bottom: 4rem;
+  }
+
+  .heart-mark{
+    width:34px; height:34px;
+    margin: 0 auto 1.6rem;
+    opacity:0.9;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn-row{
+    position:relative;
+    display:flex;
+    gap:1.4rem;
+    justify-content:center;
+    align-items:center;
+    min-height: 70px;
+  }
+  .btn{
+    font-family:'Jost', sans-serif;
+    font-size:1rem;
+    letter-spacing:0.04em;
+    padding: 0.95rem 2.6rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor:pointer;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease, background .35s ease;
+    user-select:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #yesBtn{
+    background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+    color: #2a0e18;
+    font-weight:500;
+    box-shadow: 0 8px 24px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  #yesBtn:hover{
+    transform: translateY(-2px) scale(1.035);
+    box-shadow: 0 12px 30px rgba(201,162,75,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  #yesBtn.grown{ padding: 1.15rem 3.4rem; font-size:1.08rem; }
+
+  #noBtn{
+    background: rgba(251,240,232,0.06);
+    border-color: rgba(251,240,232,0.28);
+    color: var(--ink);
+    position: relative;
+    left:0; top:0;
+  }
+  #noBtn.escaping{
+    position: fixed;
+    z-index: 50;
+    transition: transform .28s cubic-bezier(.34,1.56,.64,1), left .28s ease, top .28s ease;
+  }
+  #noBtn.shrink{ font-size: 0.78rem; padding: 0.7rem 1.6rem; opacity:0.75; }
+
+  .hint{
+    margin-top: 2.8rem;
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    color: rgba(251,240,232,0.35);
+    font-weight:300;
+  }
+  #dodgeCount{ color: var(--blush); }
+
+  /* ---------- thank you stage ---------- */
+  .ty-card{
+    text-align:center;
+    width:min(560px, 92vw);
+  }
+  .flower-wrap{
+    width: 170px; height:170px;
+    margin: 0 auto 2rem;
+  }
+  h1.ty-title{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size: clamp(2.4rem, 7vw, 3.8rem);
+    color: var(--blush);
+    margin-bottom: 0.8rem;
+  }
+  .ty-sub{
+    font-size:0.98rem;
+    color: var(--ink);
+    font-weight:300;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height:1.7;
+  }
+  .signature{
+    margin-top:3rem;
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1.05rem;
+    color: var(--gold-soft);
+    opacity:0.85;
+  }
+
+  /* floating hearts burst on thank-you */
+  #burst{ position:fixed; inset:0; pointer-events:none; z-index:3; }
+  .burst-heart{
+    position:absolute;
+    opacity:0;
+    animation: rise 3.2s ease-in forwards;
+  }
+  @keyframes rise{
+    0%{ opacity:0; transform: translateY(0) scale(0.4) rotate(0deg); }
+    10%{ opacity:1; }
+    100%{ opacity:0; transform: translateY(-70vh) scale(1.1) rotate(20deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal, .burst-heart{ animation: none !important; display:none; }
+    .btn{ transition:none; }
+  }
+
+  @media (max-width: 420px){
+    .card{ padding: 6vh 1.4rem 4vh; }
+    .btn{ padding:0.85rem 2.1rem; font-size:0.92rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="petal-field"></div>
+
+<!-- ============ PROPOSAL STAGE ============ -->
+<section class="stage" id="proposalStage">
+  <div class="card" id="proposalCard">
+    <svg class="heart-mark" viewBox="0 0 24 24" fill="none">
+      <path d="M12 20.5c-.3 0-.6-.1-.8-.3C6.6 16.6 3 13.2 3 9.4 3 6.6 5.2 4.5 7.9 4.5c1.6 0 3.1.8 4.1 2 1-1.2 2.5-2 4.1-2 2.7 0 4.9 2.1 4.9 4.9 0 3.8-3.6 7.2-8.2 10.8-.2.2-.5.3-.8.3z"
+        fill="none" stroke="#e6cf9a" stroke-width="1.1"/>
+    </svg>
+
+    <div class="eyebrow">a small question</div>
+    <h1 class="question">Do you like me,<br><span class="accent">even a little?</span></h1>
+    <p class="sub">Take your time. There's only one honest answer.</p>
+
+    <div class="btn-row">
+      <button class="btn" id="yesBtn">Yes, I do</button>
+      <button class="btn" id="noBtn">No</button>
+    </div>
+
+    <p class="hint">the "no" button gets <span id="dodgeCount">shy</span> when you get close</p>
+  </div>
+</section>
+
+<!-- ============ THANK YOU STAGE ============ -->
+<section class="stage" id="thankyou-stage">
+  <div class="ty-card">
+    <div class="flower-wrap">
+      <svg viewBox="0 0 200 200" id="flowerSvg">
+        <g id="petals" transform="translate(100,110)">
+          <!-- 6 petals -->
+          <g class="petal-g" transform="rotate(0)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f6c9d4"/>
+          </g>
+          <g class="petal-g" transform="rotate(60)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f3b8c8"/>
+          </g>
+          <g class="petal-g" transform="rotate(120)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f6c9d4"/>
+          </g>
+          <g class="petal-g" transform="rotate(180)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f3b8c8"/>
+          </g>
+          <g class="petal-g" transform="rotate(240)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f6c9d4"/>
+          </g>
+          <g class="petal-g" transform="rotate(300)">
+            <ellipse cx="0" cy="-38" rx="16" ry="34" fill="#f3b8c8"/>
+          </g>
+          <circle r="16" fill="#c9a24b"/>
+          <circle r="16" fill="url(#centerGlow)"/>
+        </g>
+        <path d="M100 145 C 96 165, 96 178, 100 195" stroke="#7a9b6e" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M100 168 C 90 168, 84 175, 80 182" stroke="#7a9b6e" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <defs>
+          <radialGradient id="centerGlow" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#e6cf9a"/>
+            <stop offset="100%" stop-color="#c9a24b"/>
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="eyebrow">thank you</div>
+    <h1 class="ty-title">You just made my day.</h1>
+    <p class="ty-sub">That one click means more than you know. Here's to more moments like this one — thank you for saying yes.</p>
+    <p class="signature">— with love, always</p>
+  </div>
+</section>
+
+<div id="burst"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- ambient petal field ---------------- */
+  const field = document.getElementById('petal-field');
+  const petalColors = ['#f6c9d4','#e6cf9a','#c98da0'];
+  const PETAL_COUNT = 16;
+
+  function makePetalSVG(color){
+    return `<svg width="14" height="18" viewBox="0 0 14 18"><ellipse cx="7" cy="9" rx="6" ry="8.5" fill="${color}" opacity="0.85"/></svg>`;
+  }
+
+  for(let i=0;i<PETAL_COUNT;i++){
+    const el = document.createElement('div');
+    el.className = 'petal';
+    const size = 0.6 + Math.random()*0.9;
+    const left = Math.random()*100;
+    const dur = 9 + Math.random()*10;
+    const delay = Math.random()*-14;
+    const driftX = (Math.random()*160-80) + 'px';
+    el.style.left = left+'vw';
+    el.style.setProperty('--drift-x', driftX);
+    el.style.transform = `scale(${size})`;
+    el.style.animationDuration = dur+'s';
+    el.style.animationDelay = delay+'s';
+    el.innerHTML = makePetalSVG(petalColors[i % petalColors.length]);
+    field.appendChild(el);
+  }
+
+  /* ---------------- dodging "No" button ---------------- */
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  const btnRow = document.querySelector('.btn-row');
+  const dodgeCountEl = document.getElementById('dodgeCount');
+  let dodges = 0;
+  let escaping = false;
+
+  const DODGE_WORDS = ["shy","nervous","quicker","determined","persistent","stubborn","in love with running"];
+
+  function distance(ax,ay,bx,by){
+    return Math.hypot(ax-bx, ay-by);
+  }
+
+  function moveNoButton(pointerX, pointerY){
+    const rect = noBtn.getBoundingClientRect();
+    const btnCenterX = rect.left + rect.width/2;
+    const btnCenterY = rect.top + rect.height/2;
+    const d = distance(pointerX, pointerY, btnCenterX, btnCenterY);
+    const DANGER_RADIUS = 110;
+
+    if(d < DANGER_RADIUS){
+      if(!escaping){
+        escaping = true;
+        noBtn.classList.add('escaping');
+      }
+      const w = noBtn.offsetWidth;
+      const h = noBtn.offsetHeight;
+      const margin = 16;
+      const maxX = window.innerWidth - w - margin;
+      const maxY = window.innerHeight - h - margin;
+
+      // pick a spot away from the pointer
+      let newX, newY, attempts = 0;
+      do{
+        newX = margin + Math.random()*(maxX-margin);
+        newY = margin + Math.random()*(maxY-margin);
+        attempts++;
+      } while(distance(newX+w/2, newY+h/2, pointerX, pointerY) < DANGER_RADIUS*1.3 && attempts < 12);
+
+      noBtn.style.left = newX + 'px';
+      noBtn.style.top = newY + 'px';
+
+      dodges++;
+      const word = DODGE_WORDS[Math.min(dodges-1, DODGE_WORDS.length-1)];
+      dodgeCountEl.textContent = word;
+
+      if(dodges >= 3){
+        noBtn.classList.add('shrink');
+      }
+      if(dodges >= 6 && !yesBtn.classList.contains('grown')){
+        yesBtn.classList.add('grown');
+      }
+    }
+  }
+
+  function handlePointer(e){
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    moveNoButton(x, y);
+  }
+
+  window.addEventListener('mousemove', handlePointer, {passive:true});
+  window.addEventListener('touchmove', handlePointer, {passive:true});
+  window.addEventListener('touchstart', handlePointer, {passive:true});
+
+  // if the "no" button somehow gets clicked/tapped directly, dodge instead of following through
+  noBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    const rect = noBtn.getBoundingClientRect();
+    moveNoButton(rect.left + rect.width/2, rect.top + rect.height/2);
+  });
+  noBtn.addEventListener('touchstart', function(e){
+    e.preventDefault();
+  }, {passive:false});
+
+  window.addEventListener('resize', function(){
+    if(escaping){
+      const rect = noBtn.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width - 16;
+      const maxY = window.innerHeight - rect.height - 16;
+      noBtn.style.left = Math.min(parseFloat(noBtn.style.left)||0, maxX) + 'px';
+      noBtn.style.top = Math.min(parseFloat(noBtn.style.top)||0, maxY) + 'px';
+    }
+  });
+
+  /* ---------------- Yes -> thank you ---------------- */
+  const proposalStage = document.getElementById('proposalStage');
+  const thankyouStage = document.getElementById('thankyou-stage');
+  const burst = document.getElementById('burst');
+
+  function spawnBurst(){
+    const heartSVG = (color, size) => `
+      <svg width="${size}" height="${size}" viewBox="0 0 24 24">
+        <path d="M12 20.5c-.3 0-.6-.1-.8-.3C6.6 16.6 3 13.2 3 9.4 3 6.6 5.2 4.5 7.9 4.5c1.6 0 3.1.8 4.1 2 1-1.2 2.5-2 4.1-2 2.7 0 4.9 2.1 4.9 4.9 0 3.8-3.6 7.2-8.2 10.8-.2.2-.5.3-.8.3z" fill="${color}"/>
+      </svg>`;
+    const colors = ['#f6c9d4','#c9a24b','#e6cf9a','#e894ac'];
+    const total = 26;
+    for(let i=0;i<total;i++){
+      const h = document.createElement('div');
+      h.className = 'burst-heart';
+      const size = 14 + Math.random()*20;
+      const left = Math.random()*100;
+      const delay = Math.random()*1.4;
+      const dur = 2.6 + Math.random()*2;
+      h.style.left = left+'vw';
+      h.style.bottom = '-5vh';
+      h.style.animationDelay = delay+'s';
+      h.style.animationDuration = dur+'s';
+      h.innerHTML = heartSVG(colors[i % colors.length], size);
+      burst.appendChild(h);
+      setTimeout(()=>h.remove(), (delay+dur+0.5)*1000);
+    }
+  }
+
+  yesBtn.addEventListener('click', function(){
+    proposalStage.classList.add('fade-out');
+    setTimeout(()=>{
+      proposalStage.style.display = 'none';
+      thankyouStage.style.display = 'flex';
+      thankyouStage.classList.add('fade-in');
+      spawnBurst();
+      setInterval(spawnBurst, 3200);
+    }, 550);
+  });
+
+  /* gentle petal bloom on flower load */
+  const petalGs = document.querySelectorAll('.petal-g');
+  petalGs.forEach((g, i)=>{
+    g.style.transformOrigin = '0px 0px';
+    g.style.transition = `transform .6s cubic-bezier(.34,1.56,.64,1) ${i*70}ms, opacity .6s ease ${i*70}ms`;
+    g.style.opacity = '0';
+    const originalTransform = g.getAttribute('transform');
+    g.setAttribute('data-final', originalTransform);
+  });
+
+  const observer = new MutationObserver(()=>{
+    if(thankyouStage.style.display === 'flex'){
+      requestAnimationFrame(()=>{
+        petalGs.forEach(g=>{ g.style.opacity = '1'; });
+      });
+    }
+  });
+  observer.observe(thankyouStage, {attributes:true, attributeFilter:['style']});
+
+})();
+</script>
+
+</body>
+</html>
