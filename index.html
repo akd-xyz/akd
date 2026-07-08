@@ -21,9 +21,12 @@
   html,body{
     height:100%;
     background:
-      radial-gradient(120% 90% at 50% -10%, #4a1a30 0%, transparent 55%),
-      radial-gradient(100% 80% at 90% 110%, #401828 0%, transparent 50%),
-      linear-gradient(160deg, var(--wine-deep) 0%, #1c0a12 100%);
+      radial-gradient(110% 80% at 12% 0%,   #ff9a8b 0%, transparent 50%),
+      radial-gradient(100% 80% at 90% 8%,   #c9a24b 0%, transparent 45%),
+      radial-gradient(110% 90% at 85% 95%,  #7b3fa0 0%, transparent 55%),
+      radial-gradient(100% 80% at 8% 100%,  #e8577e 0%, transparent 50%),
+      linear-gradient(160deg, #3a1030 0%, #1c0a12 100%);
+    background-blend-mode: screen, screen, normal, normal, normal;
     overflow:hidden;
     font-family:'Jost', sans-serif;
     color:var(--cream);
@@ -240,16 +243,12 @@
         fill="none" stroke="#e6cf9a" stroke-width="1.1"/>
     </svg>
 
-    <div class="eyebrow">a small question</div>
     <h1 class="question">Do you like me,<br><span class="accent">even a little?</span></h1>
-    <p class="sub">Take your time. There's only one honest answer.</p>
 
     <div class="btn-row">
-      <button class="btn" id="yesBtn">Yes, I do</button>
+      <button class="btn" id="yesBtn">Yes</button>
       <button class="btn" id="noBtn">No</button>
     </div>
-
-    <p class="hint">the "no" button gets <span id="dodgeCount">shy</span> when you get close</p>
   </div>
 </section>
 
@@ -292,10 +291,8 @@
       </svg>
     </div>
 
-    <div class="eyebrow">thank you</div>
-    <h1 class="ty-title">You just made my day.</h1>
-    <p class="ty-sub">That one click means more than you know. Here's to more moments like this one — thank you for saying yes.</p>
-    <p class="signature">— with love, always</p>
+    <h1 class="ty-title">Thank you.</h1>
+    <p class="signature">— with love</p>
   </div>
 </section>
 
@@ -335,11 +332,8 @@
   const noBtn = document.getElementById('noBtn');
   const yesBtn = document.getElementById('yesBtn');
   const btnRow = document.querySelector('.btn-row');
-  const dodgeCountEl = document.getElementById('dodgeCount');
   let dodges = 0;
   let escaping = false;
-
-  const DODGE_WORDS = ["shy","nervous","quicker","determined","persistent","stubborn","in love with running"];
 
   function distance(ax,ay,bx,by){
     return Math.hypot(ax-bx, ay-by);
@@ -375,8 +369,6 @@
       noBtn.style.top = newY + 'px';
 
       dodges++;
-      const word = DODGE_WORDS[Math.min(dodges-1, DODGE_WORDS.length-1)];
-      dodgeCountEl.textContent = word;
 
       if(dodges >= 3){
         noBtn.classList.add('shrink');
